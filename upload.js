@@ -9,10 +9,44 @@ const path = require("path");
 const ini = require("ini");
 const minimist = require("minimist");
 const log = require("loglevel");
+const glob = require("glob");
 
 require("./lib/wangblows");
 const {Room} = require("./lib/room");
 const {sorted, naturalCaseSort} = require("./lib/sorting");
+
+const normalize = (function() {
+if (process.platform === "win32") {
+  return file => file.replace(/\\/g, "/");
+}
+return file => file;
+})();
+
+function *collect_files(infiles) {
+  for (let file of infiles) {
+    file = normalize(file);
+    try {
+      const stat = fs.statSync(file);
+      if (!stat.isFile()) {
+        log.warn("Ignored", `${file.yellow}:`, "Not a file");
+        continue;
+      }
+      yield file;
+    }
+    catch (ex) {
+      try {
+        const globbed = glob.sync(file);
+        if (!globbed.length) {
+          throw new Error("Nothing matched");
+        }
+        yield *collect_files(globbed);
+      }
+      catch (ex) {
+        log.warn("Ignored", `${file.yellow}:`, ex.message || ex);
+      }
+    }
+  }
+}
 
 
 function print_help() {
@@ -89,9 +123,6 @@ async function main(args) {
   }
   let {_: files} = args;
   delete args._;
-  if (!files.length) {
-    throw new Error("No files specified");
-  }
   let {room: roomid} = args;
   if ("user" in args && args.user) {
     delete vola.passwd;
@@ -107,6 +138,10 @@ async function main(args) {
   const sortfn = SORTS.get(config.sort);
   if (!sortfn) {
     throw new Error("Invalid --sort");
+  }
+  files = Array.from(collect_files(files));
+  if (!files.length) {
+    throw new Error("No files specified");
   }
   files = sorted(files.map(f => path.resolve(f)), sortfn, naturalCaseSort);
   const room = new Room(roomid, config);
