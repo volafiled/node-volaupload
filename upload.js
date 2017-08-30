@@ -15,6 +15,8 @@ require("./lib/wangblows");
 const {Room} = require("./lib/room");
 const {sorted, naturalCaseSort} = require("./lib/sorting");
 
+const BLACKED = /^thumbs.*\.db$|^\.ds_store$/i;
+
 const normalize = (function() {
 if (process.platform === "win32") {
   return file => file.replace(/\\/g, "/");
@@ -22,24 +24,36 @@ if (process.platform === "win32") {
 return file => file;
 })();
 
-function *collect_files(infiles) {
+function *collect_files(infiles, recursive) {
   for (let file of infiles) {
     file = normalize(file);
     try {
+      const {base} = path.parse(file);
+      if (BLACKED.test(base)) {
+        log.warn("Ignored", `${file.yellow}:`, "You must be a roboCOP".bold);
+        continue;
+      }
       const stat = fs.statSync(file);
+      if (recursive && stat.isDirectory()) {
+        yield *collect_files(
+          fs.readDirSync(file).map(e => path.resolve(file, e)),
+          recursive);
+        continue;
+      }
       if (!stat.isFile()) {
-        log.warn("Ignored", `${file.yellow}:`, "Not a file");
+        log.warn("Ignored", `${file.yellow}:`, "Not a file".bold);
         continue;
       }
       yield file;
     }
     catch (ex) {
+      console.log(ex);
       try {
         const globbed = glob.sync(file);
         if (!globbed.length) {
           throw new Error("Nothing matched");
         }
-        yield *collect_files(globbed);
+        yield *collect_files(globbed, recursive);
       }
       catch (ex) {
         log.warn("Ignored", `${file.yellow}:`, ex.message || ex);
@@ -101,7 +115,7 @@ async function main(args) {
   const {vola = {}, aliases = {}} = config;
 
   args = minimist(args, {
-    boolean: ["help", "h", "v", "delete-after"],
+    boolean: ["help", "h", "v", "delete-after", "retarddir"],
     alias: {
       h: "help",
       p: "passwd",
@@ -139,7 +153,7 @@ async function main(args) {
   if (!sortfn) {
     throw new Error("Invalid --sort");
   }
-  files = Array.from(collect_files(files));
+  files = Array.from(collect_files(files, config.retarddir));
   if (!files.length) {
     throw new Error("No files specified");
   }
