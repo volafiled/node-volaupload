@@ -1,6 +1,6 @@
 {
   "name": "volaupload",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "File uploader for volafile",
   "repository": "https://github.com/RealDolos/node-volaupload",
   "main": "upload.js",
@@ -14,12 +14,12 @@
     "loglevel": "^1.4.1",
     "minimist": "^1.2.0",
     "progress": "^2.0.0",
-    "volapi": "^0.4.1"
+    "volapi": "^0.4.2"
   },
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "RealDolos",
-  "license": "ISC"
+  "license": "MIT"
 }

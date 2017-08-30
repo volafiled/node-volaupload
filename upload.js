@@ -13,7 +13,7 @@ const glob = require("glob");
 
 require("./lib/wangblows");
 const {Room} = require("./lib/room");
-const {sorted, naturalCaseSort} = require("./lib/sorting");
+const {sort, naturalCaseSort} = require("./lib/sorting");
 
 const BLACKED = /^thumbs.*\.db$|^\.ds_store$/i;
 
@@ -72,7 +72,8 @@ function print_help() {
     "-r, --room": "Room to which to upload files",
     "-u, --user": "User name to use",
     "-p, --passwd": "Login to vola for some sweet stats",
-    "-s, --sort": "Method by which file to order before uploading",
+    "-s, --sort": "Method by which file to order before uploading " +
+      "[filename*, path, size, none]",
     "--retarddir": "Specify directories and upload all files within",
     "--version": "Print version and exit",
   };
@@ -90,16 +91,16 @@ function print_help() {
 
 function sort_filename(file) {
   const {base, dir} = path.parse(file);
-  return `${base}\xff///\xff${dir}`;
+  return [base, dir];
 }
 
 function sort_path(file) {
   const {base, dir} = path.parse(file);
-  return `${dir}\xff///\xff${base}`;
+  return [dir, base];
 }
 
 function sort_size(file) {
-  return `${fs.statSync(file).size}\xff///\xff${sort_filename(file)}`;
+  return [fs.statSync(file).size, sort_filename(file)];
 }
 
 const SORTS = Object.freeze(new Map([
@@ -150,15 +151,17 @@ async function main(args) {
     roomid = aliases[roomid] || roomid;
   }
   config = Object.assign({}, vola, args);
-  const sortfn = SORTS.get(config.sort);
-  if (!sortfn) {
-    throw new Error("Invalid --sort");
-  }
   files = Array.from(collect_files(files, config.retarddir));
   if (!files.length) {
     throw new Error("No files specified");
   }
-  files = sorted(files.map(f => path.resolve(f)), sortfn, naturalCaseSort);
+  if (config.sort !== "none") {
+    const sortfn = SORTS.get(config.sort);
+    if (!sortfn) {
+      throw new Error("Invalid --sort");
+    }
+    files = sort(files.map(f => path.resolve(f)), sortfn, naturalCaseSort);
+  }
   const room = new Room(roomid, config);
   const cancel = () => {
     log.warn("\r\nCancel requested".bold.yellow);
