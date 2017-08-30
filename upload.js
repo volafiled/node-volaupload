@@ -36,7 +36,7 @@ function *collect_files(infiles, recursive) {
       const stat = fs.statSync(file);
       if (recursive && stat.isDirectory()) {
         yield *collect_files(
-          fs.readDirSync(file).map(e => path.resolve(file, e)),
+          fs.readdirSync(file).map(e => path.resolve(file, e)),
           recursive);
         continue;
       }
@@ -73,6 +73,7 @@ function print_help() {
     "-u, --user": "User name to use",
     "-p, --passwd": "Login to vola for some sweet stats",
     "-s, --sort": "Method by which file to order before uploading",
+    "--retarddir": "Specify directories and upload all files within",
     "--version": "Print version and exit",
   };
   const args = Object.keys(options);
