@@ -113,7 +113,13 @@ async function main(args) {
   const home = process.env[
     (process.platform === "win32") ? "USERPROFILE" : "HOME"];
   const iniPath = path.resolve(home, ".vola.conf");
-  let config = ini.parse(fs.readFileSync(iniPath, {encoding: "utf-8"}));
+  let config = {};
+  try {
+    config = ini.parse(fs.readFileSync(iniPath, {encoding: "utf-8"}));
+  }
+  catch (ex) {
+    log.warn("Make a", ".vola.conf".yellow, "already, pls");
+  }
   const {vola = {}, aliases = {}} = config;
 
   args = minimist(args, {
