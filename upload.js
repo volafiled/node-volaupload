@@ -24,6 +24,8 @@ if (process.platform === "win32") {
 return file => file;
 })();
 
+class UsageError extends Error {}
+
 function *collect_files(infiles, recursive) {
   for (let file of infiles) {
     file = normalize(file);
@@ -51,7 +53,7 @@ function *collect_files(infiles, recursive) {
       try {
         const globbed = glob.sync(file);
         if (!globbed.length) {
-          throw new Error("Nothing matched");
+          throw new UsageError("No files matched");
         }
         yield *collect_files(globbed, recursive);
       }
@@ -63,23 +65,26 @@ function *collect_files(infiles, recursive) {
 }
 
 
-function print_help() {
-  log.info("node", process.argv[1].green,
-    "--room".yellow, "BEEPi".red,
-    "--user".yellow, "volaupload".red,
-    "[FILES]".bold.green);
+function printUsage() {
+  const {base: exe} = path.parse(process.argv[1]);
+  log.info(exe.bold.green,
+    "--room".yellow, "BEEPi".cyan,
+    "--user".yellow, "volaupload".cyan,
+    "[FILES]".bold.yellow);
   const options = {
     "-r, --room": "Room to which to upload files",
     "-u, --user": "User name to use",
     "-p, --passwd": "Login to vola for some sweet stats",
     "-s, --sort": "Method by which file to order before uploading " +
       "[filename*, path, size, none]",
-    "--retarddir": "Specify directories and upload all files within",
+    "-R, --retarddir": "Specify directories and upload all files within",
     "--version": "Print version and exit",
+    "--prefix": "Add a prefix to all uploads",
+    "-h, --help": "Take a wild guess",
   };
   const args = Object.keys(options);
   const sk = k => k.replace(/-/g, "");
-  args.sort((a, b) => sk(a) > sk(b));
+  sort(args, sk, naturalCaseSort);
   const max = args.reduce((p, c) => Math.max(c.length, p), 0);
   log.info("");
   for (const a of args) {
@@ -128,6 +133,7 @@ async function main(args) {
       h: "help",
       p: "passwd",
       r: "room",
+      R: "retarddir",
       s: "sort",
       u: "user",
     },
@@ -136,7 +142,7 @@ async function main(args) {
     }
   });
   if (args.help) {
-    print_help();
+    printUsage();
     return;
   }
   if (args.version) {
@@ -150,7 +156,7 @@ async function main(args) {
     delete vola.passwd;
   }
   if (!roomid) {
-    throw new Error("No room specified");
+    throw new UsageError("No room specified");
   }
   delete args.room;
   if (roomid.toLowerCase() in aliases) {
@@ -159,12 +165,12 @@ async function main(args) {
   config = Object.assign({}, vola, args);
   files = Array.from(collect_files(files, config.retarddir));
   if (!files.length) {
-    throw new Error("No files specified");
+    throw new UsageError("No files specified");
   }
   if (config.sort !== "none") {
     const sortfn = SORTS.get(config.sort);
     if (!sortfn) {
-      throw new Error("Invalid --sort");
+      throw new UsageError("Invalid --sort");
     }
     files = sort(files.map(f => path.resolve(f)), sortfn, naturalCaseSort);
   }
@@ -183,6 +189,10 @@ if (require.main === module) {
   log.setDefaultLevel(log.levels.INFO);
   main(process.argv.slice(2)).catch(ex => {
     log.error("Error".red, ex.message || ex);
+    if (ex instanceof UsageError) {
+      log.info("");
+      printUsage();
+    }
     process.exit(1);
   }).then(rv => {
     process.exit(rv || 0);
