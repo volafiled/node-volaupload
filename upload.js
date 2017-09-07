@@ -14,6 +14,7 @@ const glob = require("glob");
 require("./lib/wangblows");
 const {Room} = require("./lib/room");
 const {sort, naturalCaseSort} = require("./lib/sorting");
+const {filesize, Rate} = require("./lib/util");
 
 const BLACKED = /^thumbs.*\.db$|^\.ds_store$/i;
 
@@ -72,7 +73,7 @@ function printUsage() {
     "--user".yellow, "volaupload".cyan,
     "[FILES]".bold.yellow);
   const options = {
-    "-r, --room": "Room to which to upload files",
+    "-r, --room": "Room(s) to which to upload files",
     "-u, --user": "User name to use",
     "-p, --passwd": "Login to vola for some sweet stats",
     "-s, --sort": "Method by which file to order before uploading " +
@@ -151,17 +152,17 @@ async function main(args) {
   }
   let {_: files} = args;
   delete args._;
-  let {room: roomid} = args;
+  let {room: roomids} = args;
   if ("user" in args && args.user) {
     delete vola.passwd;
   }
-  if (!roomid) {
+  if (!roomids) {
     throw new UsageError("No room specified");
   }
-  delete args.room;
-  if (roomid.toLowerCase() in aliases) {
-    roomid = aliases[roomid] || roomid;
+  if (!Array.isArray(roomids)) {
+    roomids = [roomids];
   }
+  delete args.room;
   config = Object.assign({}, vola, args);
   files = Array.from(collect_files(files, config.retarddir));
   if (!files.length) {
@@ -174,15 +175,52 @@ async function main(args) {
     }
     files = sort(files.map(f => path.resolve(f)), sortfn, naturalCaseSort);
   }
-  const room = new Room(roomid, config);
+
+  let lastRoom = null;
+  const rate = new Rate();
+  const tlen = files.length === 1 ? "one" : files.length.toString();
+  log.info(
+    "Deploying".bold,
+    tlen.bold.green,
+    `botnet payload${tlen === "one" ? "" : "s"}`.bold.yellow,
+    "to", roomids.length.toString().bold.magenta, "rooms");
+
+  let canceled = false;
   const cancel = () => {
+    if (canceled) {
+      return;
+    }
     log.warn("\r\nCancel requested".bold.yellow);
-    room.close();
+    canceled = true;
+    lastRoom.close();
   };
   process.on("SIGINT", cancel);
   process.on("SIGTERM", cancel);
   process.on("SIGQUIT", cancel);
-  await room.upload(files);
+
+  for (;;) {
+    let roomid = roomids.shift();
+    if (!roomid || canceled) {
+      break;
+    }
+    if (roomid.toLowerCase() in aliases) {
+      roomid = aliases[roomid] || roomid;
+    }
+    const thisconfig = Object.assign({}, config);
+    if (roomids.length) {
+      thisconfig["delete-after"] = false;
+    }
+    const room = new Room(roomid, thisconfig, lastRoom);
+    if (!lastRoom) {
+      await room.login();
+    }
+    lastRoom = room;
+    await room.upload(files, rate);
+  }
+  log.info(
+    "All done in",
+    `${rate.elapsed.toFixed(1)}s`.bold,
+    `(${`${filesize(rate.rate)}/s`.cyan.blue})`);
 }
 
 if (require.main === module) {
