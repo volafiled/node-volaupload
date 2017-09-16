@@ -1,6 +1,6 @@
 {
   "name": "volaupload",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "File uploader for volafile",
   "repository": "https://github.com/RealDolos/node-volaupload",
   "main": "upload.js",
