@@ -74,6 +74,7 @@ function printUsage() {
     "[FILES]".bold.yellow);
   const options = {
     "-r, --room": "Room(s) to which to upload files",
+    "-a, --roompasswd": "Room password",
     "-u, --user": "User name to use",
     "-p, --passwd": "Login to vola for some sweet stats",
     "-s, --sort": "Method by which file to order before uploading " +
@@ -126,11 +127,12 @@ async function main(args) {
   catch (ex) {
     log.warn("Make a", ".vola.conf".yellow, "already, pls");
   }
-  const {vola = {}, aliases = {}} = config;
+  const {vola = {}, aliases = {}, roompasswords = {}} = config;
 
   args = minimist(args, {
     boolean: ["help", "h", "v", "delete-after", "retarddir"],
     alias: {
+      a: "roompasswd",
       h: "help",
       p: "passwd",
       r: "room",
@@ -211,6 +213,12 @@ async function main(args) {
       thisconfig["delete-after"] = false;
     }
     const room = new Room(roomid, thisconfig, lastRoom);
+    if (config.roompasswd) {
+      room.password = config.roompasswd;
+    }
+    else if (room.id in roompasswords) {
+      room.password = roompasswords[room.id];
+    }
     if (!lastRoom) {
       await room.login();
     }
