@@ -14,7 +14,7 @@
     "loglevel": "^1.5.1",
     "minimist": "^1.2.0",
     "progress": "^2.0.0",
-    "volapi": "^0.6.1"
+    "volapi": "^0.6.2"
   },
   "devDependencies": {},
   "scripts": {
