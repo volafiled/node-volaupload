@@ -80,6 +80,8 @@ function printUsage() {
     "-s, --sort": "Method by which file to order before uploading " +
       "[filename*, path, size, none]",
     "-R, --retarddir": "Specify directories and upload all files within",
+    "-c, --check": "Check files were uploaded correctly",
+    "--delete-after": "Remove file after uploading",
     "--version": "Print version and exit",
     "--prefix": "Add a prefix to all uploads",
     "-h, --help": "Take a wild guess",
