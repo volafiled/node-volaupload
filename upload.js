@@ -130,9 +130,10 @@ async function main(args) {
   const {vola = {}, aliases = {}, roompasswords = {}} = config;
 
   args = minimist(args, {
-    boolean: ["help", "h", "v", "delete-after", "retarddir"],
+    boolean: ["help", "h", "v", "delete-after", "retarddir", "check"],
     alias: {
       a: "roompasswd",
+      c: "check",
       h: "help",
       p: "passwd",
       r: "room",
