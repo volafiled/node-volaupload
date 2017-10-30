@@ -74,6 +74,7 @@ function printUsage() {
     "[FILES]".bold.yellow);
   const options = {
     "-r, --room": "Room(s) to which to upload files",
+    "-t, --attempts": "Number of upload attempts per file",
     "-a, --roompasswd": "Room password",
     "-u, --user": "User name to use",
     "-p, --passwd": "Login to vola for some sweet stats",
@@ -141,10 +142,12 @@ async function main(args) {
       r: "room",
       R: "retarddir",
       s: "sort",
+      t: "attempts",
       u: "user",
     },
     default: {
       sort: "filename",
+      attempts: 5,
     }
   });
   if (args.help) {
@@ -179,6 +182,9 @@ async function main(args) {
       throw new UsageError("Invalid --sort");
     }
     files = sort(files.map(f => path.resolve(f)), sortfn, naturalCaseSort);
+  }
+  if (!isFinite(config.attempts) || config.attempts < 0) {
+    throw new UsageError("Invalid number of attempts");
   }
 
   let lastRoom = null;
