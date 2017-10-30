@@ -5,8 +5,8 @@ Because why not?!
 
 Installation
 ---
-1. Install node (current not lts) and git
-2. Install this repo with npm: `npm i -g https://github.com/RealDolos/node-volaupload`
+1. Install node (current not lts)
+2. Install this thing: `npm i -g --latest volaupload`
 3. ...
 4. Profit<sup>*</sup>
 
