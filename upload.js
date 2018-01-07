@@ -14,7 +14,7 @@ const glob = require("glob");
 require("./lib/wangblows");
 const {Room} = require("./lib/room");
 const {sort, naturalCaseSort} = require("./lib/sorting");
-const {filesize, Rate} = require("./lib/util");
+const {shuffle, filesize, Rate} = require("./lib/util");
 
 const BLACKED = /^thumbs.*\.db$|^\.ds_store$/i;
 
@@ -85,6 +85,7 @@ function printUsage() {
     "--delete-after": "Remove file after uploading",
     "--version": "Print version and exit",
     "--prefix": "Add a prefix to all uploads",
+    "--spam": "Spam using these greek names",
     "-h, --help": "Take a wild guess",
   };
   const args = Object.keys(options);
@@ -176,7 +177,10 @@ async function main(args) {
   if (!files.length) {
     throw new UsageError("No files specified");
   }
-  if (config.sort !== "none") {
+  if (config.sort === "rnd") {
+    files = shuffle(files);
+  }
+  else if (config.sort !== "none") {
     const sortfn = SORTS.get(config.sort);
     if (!sortfn) {
       throw new UsageError("Invalid --sort");
