@@ -13,7 +13,7 @@
     "ini": "^1.3.5",
     "loglevel": "^1.6.1",
     "minimist": "^1.2.0",
-    "volapi": "^1.5.0"
+    "volapi": "^2.0.0"
   },
   "devDependencies": {},
   "scripts": {
