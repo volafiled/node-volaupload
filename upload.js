@@ -27,8 +27,8 @@ return file => file;
 
 class UsageError extends Error {}
 
-function *collect_files(infiles, recursive) {
-  for (let file of infiles) {
+function *collect_files(inputFiles, recursive) {
+  for (let file of inputFiles) {
     file = normalize(file);
     try {
       const {base} = path.parse(file);
@@ -52,11 +52,11 @@ function *collect_files(infiles, recursive) {
     catch (ex) {
       console.log(ex);
       try {
-        const globbed = glob.sync(file);
-        if (!globbed.length) {
+        const found = glob.sync(file);
+        if (!found.length) {
           throw new UsageError("No files matched");
         }
-        yield *collect_files(globbed, recursive);
+        yield *collect_files(found, recursive);
       }
       catch (ex) {
         log.warn("Ignored", `${file.yellow}:`, ex.message || ex);
@@ -181,11 +181,11 @@ async function main(args) {
     files = shuffle(files);
   }
   else if (config.sort !== "none") {
-    const sortfn = SORTS.get(config.sort);
-    if (!sortfn) {
+    const sort_fn = SORTS.get(config.sort);
+    if (!sort_fn) {
       throw new UsageError("Invalid --sort");
     }
-    files = sort(files.map(f => path.resolve(f)), sortfn, naturalCaseSort);
+    files = sort(files.map(f => path.resolve(f)), sort_fn, naturalCaseSort);
   }
   if (!isFinite(config.attempts) || config.attempts < 0) {
     throw new UsageError("Invalid number of attempts");
@@ -193,11 +193,11 @@ async function main(args) {
 
   let lastRoom = null;
   const rate = new Rate();
-  const tlen = files.length === 1 ? "one" : files.length.toString();
+  const t_len = files.length === 1 ? "one" : files.length.toString();
   log.info(
     "Deploying".bold,
-    tlen.bold.green,
-    `botnet payload${tlen === "one" ? "" : "s"}`.bold.yellow,
+    t_len.bold.green,
+    `botnet payload${t_len === "one" ? "" : "s"}`.bold.yellow,
     "to", roomids.length.toString().bold.magenta, "rooms");
 
   let canceled = false;
@@ -214,18 +214,18 @@ async function main(args) {
   process.on("SIGQUIT", cancel);
 
   for (;;) {
-    let roomid = roomids.shift();
-    if (!roomid || canceled) {
+    let room_id = roomids.shift();
+    if (!room_id || canceled) {
       break;
     }
-    if (roomid.toLowerCase() in aliases) {
-      roomid = aliases[roomid] || roomid;
+    if (room_id.toLowerCase() in aliases) {
+      room_id = aliases[room_id] || room_id;
     }
-    const thisconfig = Object.assign({}, config);
+    const this_config = Object.assign({}, config);
     if (roomids.length) {
-      thisconfig["delete-after"] = false;
+      this_config["delete-after"] = false;
     }
-    const room = new Room(roomid, thisconfig, lastRoom);
+    const room = new Room(room_id, this_config, lastRoom);
     if (config.roompasswd) {
       room.password = config.roompasswd;
     }
