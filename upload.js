@@ -50,7 +50,6 @@ function *collect_files(inputFiles, recursive) {
       yield file;
     }
     catch (ex) {
-      console.log(ex);
       try {
         const found = glob.sync(file);
         if (!found.length) {
